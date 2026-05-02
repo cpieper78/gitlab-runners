@@ -105,7 +105,7 @@ out of the box. To move to remote state on S3+DynamoDB:
 
 | Path | What it does |
 |---|---|
-| `.github/workflows/terraform.yml` | On PRs: `fmt -check`, `init`, `validate`, `plan`. Auths via GitHub OIDC; needs repo secret `AWS_OIDC_ROLE_ARN`. |
+| `.github/workflows/terraform.yml` | On PRs: `fmt -check`, `init -backend=false`, `validate` (always); `plan` only when repo variable `AWS_OIDC_CONFIGURED == 'true'` (set this once you've created the OIDC role and `AWS_OIDC_ROLE_ARN` secret — see Prerequisites). |
 | `.gitlab-ci.yml` (repo root) | Same lifecycle via GitLab OIDC if you mirror the repo to GitLab. Needs CI/CD variable `AWS_ROLE_ARN`. |
 | `examples/gitlab-ci/.gitlab-ci.yml` | Exercises the runner end-to-end (cache, matrix, web-terminal sleep job, Secrets Manager fetch). Copy into a real GitLab project. |
 

@@ -14,15 +14,39 @@ permissions:
 env:
   TF_IN_AUTOMATION: "true"
   AWS_REGION: us-east-1
-  TF_WORKDIR: terraform
 
 jobs:
-  plan:
+  validate:
+    # Static checks that need no AWS creds. Always runs.
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ${{ env.TF_WORKDIR }}
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v4
 
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.5
+
+      - name: terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: terraform init (no backend)
+        run: terraform init -backend=false -input=false
+
+      - name: terraform validate
+        run: terraform validate -no-color
+
+  plan:
+    # Skipped on first-time setup until AWS_OIDC_ROLE_ARN is configured —
+    # see README "Prerequisites" for the one-time AWS IAM OIDC role setup.
+    needs: validate
+    runs-on: ubuntu-latest
+    if: ${{ vars.AWS_OIDC_CONFIGURED == 'true' }}
+    defaults:
+      run:
+        working-directory: terraform
     steps:
       - uses: actions/checkout@v4
 
@@ -35,14 +59,8 @@ jobs:
         with:
           terraform_version: 1.9.5
 
-      - name: terraform fmt
-        run: terraform fmt -check -recursive
-
       - name: terraform init
         run: terraform init -input=false
-
-      - name: terraform validate
-        run: terraform validate -no-color
 
       - name: terraform plan
         id: plan
@@ -60,10 +78,8 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const path = require('path');
-            const planPath = path.join('${{ env.TF_WORKDIR }}', 'plan.txt');
-            const max = 60_000; // GitHub comment limit guard
-            let body = fs.readFileSync(planPath, 'utf8');
+            const max = 60_000;
+            let body = fs.readFileSync('terraform/plan.txt', 'utf8');
             if (body.length > max) {
               body = body.slice(0, max) + '\n\n... (truncated)';
             }
