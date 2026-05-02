@@ -17,5 +17,11 @@ runner_concurrency = 10
 # pick the smallest set that works for your operators (e.g. office egress).
 cluster_endpoint_public_access_cidrs = ["203.0.113.0/24"]
 
-# Tighten in production:
-# session_server_source_cidrs = ["203.0.113.0/24"]
+# Required: GitLab.com egress CIDRs that need to reach the session_server NLB
+# for the interactive web terminal. Pull the canonical list from
+# https://docs.gitlab.com/ee/user/gitlab_com/#ip-range and copy the entries
+# here. Update on a cadence (or whenever GitLab announces a change).
+session_server_source_cidrs = [
+  # "x.x.x.x/yy",
+  # "x.x.x.x/yy",
+]

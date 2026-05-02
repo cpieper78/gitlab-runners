@@ -82,12 +82,38 @@ out of the box. To move to remote state on S3+DynamoDB:
 - Trigger a job tagged `eks-runners`; a build pod is scheduled in the
   cluster's `gitlab-runner` namespace.
 
+## Locking down session_server ingress
+
+The session_server NLB is fronted by a Terraform-managed security group
+(`aws_security_group.session_server`). Ingress on 443/tcp is restricted to
+the CIDRs in `var.session_server_source_cidrs` — there is intentionally no
+default, so you must supply the list explicitly.
+
+The source IPs that need to reach the session server are GitLab.com's web-
+tier egress ranges (used when a user clicks **Debug** in the job view). Pull
+the canonical list from GitLab's docs and update the variable when GitLab
+announces changes:
+
+  https://docs.gitlab.com/ee/user/gitlab_com/#ip-range
+
+The AWS Load Balancer Controller attaches the SG to the NLB via the
+`service.beta.kubernetes.io/aws-load-balancer-security-groups` annotation;
+backend rules (NLB SG → cluster SG on 8093/tcp) are managed automatically
+by the controller, so no extra cluster-SG plumbing is required.
+
+The SG ID is exposed via the `session_server_security_group_id` output if
+you need to reference it from elsewhere.
+
 ## Verifying session_server
 
 - The chart-created Service `gitlab-runner-session-server` is of type
   `LoadBalancer` and gets an NLB hostname populated by the AWS Load
-  Balancer Controller.
+  Balancer Controller. The NLB has the locked-down SG attached.
 - `dig +short <session_server_hostname>` resolves to that NLB.
+- From an IP outside `session_server_source_cidrs`,
+  `curl -vI --connect-timeout 5 https://<session_server_hostname>/` should
+  hang or time out (SG drop). From an in-range IP, TLS terminates with the
+  ACM cert.
 - In the GitLab UI, run a job that pauses (e.g. `sleep 600`), then click
   **Debug** → an interactive web terminal opens into the build pod.
 
