@@ -1,0 +1,56 @@
+gitlabUrl: ${gitlab_url}
+
+# Token comes from the K8s Secret managed by Terraform; chart reads
+# `runner-token` (new GitLab 16+ glrt-... auth tokens).
+runners:
+  secret: ${runner_secret_name}
+
+  # Inner contents of the [[runners]] block. The chart wraps this in
+  # `[[runners]]` and prepends `concurrent = ...` and `[session_server]`
+  # (when sessionServer.enabled) at the top level of config.toml.
+  config: |
+    [runners.kubernetes]
+      namespace = "${runner_namespace}"
+      privileged = false
+      poll_timeout = 600
+
+    [runners.cache]
+      Type = "s3"
+      Shared = true
+      [runners.cache.s3]
+        BucketName = "${cache_bucket}"
+        BucketLocation = "${region}"
+        AuthenticationType = "iam"
+
+concurrent: ${concurrency}
+
+rbac:
+  create: true
+
+serviceAccount:
+  create: true
+  name: ${service_account_name}
+  annotations:
+    eks.amazonaws.com/role-arn: ${irsa_role_arn}
+
+# session_server is rendered by the chart from these values into both
+# config.toml ([session_server] block, with advertise_address built from
+# publicIP:externalPort) and a Kubernetes Service of type LoadBalancer
+# annotated for an internet-facing NLB with TLS termination at an ACM cert.
+sessionServer:
+  enabled: true
+  timeout: ${session_server_timeout}
+  internalPort: 8093
+  externalPort: 443
+  publicIP: ${session_server_hostname}
+  loadBalancerSourceRanges:
+%{ for cidr in session_server_source_cidrs ~}
+    - ${cidr}
+%{ endfor ~}
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: external
+    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: ${session_server_certificate_arn}
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
