@@ -54,8 +54,10 @@ terminal:debug:
 
 secret:fetch:
   stage: secrets
+  # The AWS Secrets Manager resolver looks for an id_token literally named
+  # AWS_ID_TOKEN unless `token:` is overridden under the secret. Don't rename it.
   id_tokens:
-    AWS_TOKEN:
+    AWS_ID_TOKEN:
       aud: https://gitlab.com
   secrets:
     DEMO_SECRET:

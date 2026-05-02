@@ -47,9 +47,13 @@ variable "node_max_size" {
 }
 
 variable "cluster_endpoint_public_access_cidrs" {
-  description = "CIDRs allowed to reach the EKS public API endpoint. Lock this down for production."
+  description = "CIDRs allowed to reach the EKS public API endpoint. Required and intentionally has no default — pick the smallest set that works for your operators (e.g. office egress + bastion). Use [\"0.0.0.0/0\"] explicitly only as a last resort."
   type        = list(string)
-  default     = ["0.0.0.0/0"]
+
+  validation {
+    condition     = length(var.cluster_endpoint_public_access_cidrs) > 0
+    error_message = "Set at least one CIDR — use [\"0.0.0.0/0\"] explicitly if you really want a fully public endpoint."
+  }
 }
 
 variable "gitlab_url" {

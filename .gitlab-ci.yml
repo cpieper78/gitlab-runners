@@ -29,7 +29,7 @@ variables:
     AWS_ID_TOKEN:
       aud: https://gitlab.com
   before_script:
-    - apk add --no-cache aws-cli bash
+    - apk add --no-cache aws-cli bash jq
     - >
       creds=$(aws sts assume-role-with-web-identity
       --role-arn "$AWS_ROLE_ARN"
@@ -37,9 +37,9 @@ variables:
       --web-identity-token "$AWS_ID_TOKEN"
       --duration-seconds 3600
       --output json)
-    - export AWS_ACCESS_KEY_ID=$(echo "$creds" | sed -n 's/.*"AccessKeyId": "\([^"]*\)".*/\1/p')
-    - export AWS_SECRET_ACCESS_KEY=$(echo "$creds" | sed -n 's/.*"SecretAccessKey": "\([^"]*\)".*/\1/p')
-    - export AWS_SESSION_TOKEN=$(echo "$creds" | sed -n 's/.*"SessionToken": "\([^"]*\)".*/\1/p')
+    - export AWS_ACCESS_KEY_ID=$(echo "$creds" | jq -r '.Credentials.AccessKeyId')
+    - export AWS_SECRET_ACCESS_KEY=$(echo "$creds" | jq -r '.Credentials.SecretAccessKey')
+    - export AWS_SESSION_TOKEN=$(echo "$creds" | jq -r '.Credentials.SessionToken')
     - cd terraform
 
 fmt:

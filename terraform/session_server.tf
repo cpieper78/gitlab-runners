@@ -44,10 +44,28 @@ data "kubernetes_service_v1" "session_server" {
   depends_on = [helm_release.gitlab_runner]
 }
 
+locals {
+  # helm_release waits for resources by default, but Service status.loadBalancer.ingress
+  # population is asynchronous via the AWS Load Balancer Controller. Surface a clear
+  # error if it isn't populated by apply-time so users know to re-run apply rather
+  # than getting an opaque "invalid index" failure.
+  session_server_lb_hostname = try(
+    data.kubernetes_service_v1.session_server.status[0].load_balancer[0].ingress[0].hostname,
+    null,
+  )
+}
+
 resource "aws_route53_record" "session_server" {
+  lifecycle {
+    precondition {
+      condition     = local.session_server_lb_hostname != null && local.session_server_lb_hostname != ""
+      error_message = "session_server LoadBalancer Service has no ingress hostname yet. Wait ~60s for the AWS Load Balancer Controller to provision the NLB and re-run `terraform apply`."
+    }
+  }
+
   zone_id = var.route53_zone_id
   name    = var.session_server_hostname
   type    = "CNAME"
   ttl     = 60
-  records = [data.kubernetes_service_v1.session_server.status[0].load_balancer[0].ingress[0].hostname]
+  records = [local.session_server_lb_hostname]
 }

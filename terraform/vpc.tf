@@ -3,7 +3,11 @@ data "aws_availability_zones" "available" {
 }
 
 locals {
-  azs = slice(data.aws_availability_zones.available.names, 0, 3)
+  azs = slice(
+    data.aws_availability_zones.available.names,
+    0,
+    min(length(data.aws_availability_zones.available.names), 3),
+  )
 }
 
 module "vpc" {

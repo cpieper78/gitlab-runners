@@ -73,19 +73,28 @@ jobs:
           set -o pipefail
           terraform plan -no-color -input=false -out=tfplan | tee plan.txt
 
-      - name: comment plan on PR
+      - name: comment plan on PR (sticky)
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
+            const marker = '<!-- terraform-plan-comment -->';
             const max = 60_000;
-            let body = fs.readFileSync('terraform/plan.txt', 'utf8');
-            if (body.length > max) {
-              body = body.slice(0, max) + '\n\n... (truncated)';
+            let plan = fs.readFileSync('terraform/plan.txt', 'utf8');
+            if (plan.length > max) {
+              plan = plan.slice(0, max) + '\n\n... (truncated)';
             }
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: '```\n' + body + '\n```',
-            });
+            const body = `${marker}\n### Terraform plan\n\n\`\`\`\n${plan}\n\`\`\``;
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const existing = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number, per_page: 100 },
+            );
+            const prior = existing.find(c => c.body && c.body.includes(marker));
+            if (prior) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: prior.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }

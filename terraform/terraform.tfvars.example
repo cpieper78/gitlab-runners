@@ -13,6 +13,9 @@ gitlab_project_path     = "mygroup/myrepo"
 create_demo_secret = true
 runner_concurrency = 10
 
+# Required: who can reach the EKS public API endpoint. No safe default ships;
+# pick the smallest set that works for your operators (e.g. office egress).
+cluster_endpoint_public_access_cidrs = ["203.0.113.0/24"]
+
 # Tighten in production:
-# cluster_endpoint_public_access_cidrs = ["203.0.113.0/24"]
-# session_server_source_cidrs          = ["203.0.113.0/24"]
+# session_server_source_cidrs = ["203.0.113.0/24"]
