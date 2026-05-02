@@ -25,11 +25,8 @@ resource "aws_vpc_security_group_ingress_rule" "session_server" {
   tags = local.tags
 }
 
-resource "aws_vpc_security_group_egress_rule" "session_server_all" {
-  security_group_id = aws_security_group.session_server.id
-  description       = "Default outbound (NLB egress to backend pods is managed by AWS Load Balancer Controller separately)."
-  cidr_ipv4         = "0.0.0.0/0"
-  ip_protocol       = "-1"
-
-  tags = local.tags
-}
+# AWS auto-creates an allow-all egress rule on every new security group.
+# We rely on that default — adding an explicit aws_vpc_security_group_egress_rule
+# with identical scope would collide with the implicit rule. Backend traffic
+# (frontend SG → cluster SG on 8093/tcp) is managed separately by the AWS
+# Load Balancer Controller's manage-backend-security-group-rules behavior.
