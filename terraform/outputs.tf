@@ -23,6 +23,11 @@ output "session_server_url" {
   value       = "https://${var.session_server_hostname}"
 }
 
+output "session_server_security_group_id" {
+  description = "ID of the security group attached to the session_server NLB; ingress is restricted to var.session_server_source_cidrs."
+  value       = aws_security_group.session_server.id
+}
+
 output "gitlab_oidc_provider_arn" {
   description = "ARN of the GitLab OIDC IdP registered in AWS IAM."
   value       = aws_iam_openid_connect_provider.gitlab.arn

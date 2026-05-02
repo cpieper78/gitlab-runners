@@ -69,6 +69,11 @@ jobs:
           TF_VAR_session_server_hostname: ${{ vars.SESSION_SERVER_HOSTNAME }}
           TF_VAR_route53_zone_id: ${{ vars.ROUTE53_ZONE_ID }}
           TF_VAR_gitlab_project_path: ${{ vars.GITLAB_PROJECT_PATH }}
+          # List-typed required vars: fall back to TEST-NET (RFC 5737) placeholders so
+          # `terraform plan` runs in CI even before the repo has CIDR vars configured.
+          # Override with repo Variables when ready.
+          TF_VAR_session_server_source_cidrs: ${{ vars.SESSION_SERVER_SOURCE_CIDRS || '["203.0.113.0/24"]' }}
+          TF_VAR_cluster_endpoint_public_access_cidrs: ${{ vars.CLUSTER_ENDPOINT_PUBLIC_ACCESS_CIDRS || '["203.0.113.0/24"]' }}
         run: |
           set -o pipefail
           terraform plan -no-color -input=false -out=tfplan | tee plan.txt

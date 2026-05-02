@@ -36,8 +36,8 @@ resource "helm_release" "gitlab_runner" {
       concurrency                    = var.runner_concurrency
       session_server_hostname        = var.session_server_hostname
       session_server_timeout         = var.session_server_timeout
-      session_server_source_cidrs    = var.session_server_source_cidrs
       session_server_certificate_arn = aws_acm_certificate_validation.session_server.certificate_arn
+      session_server_security_group  = aws_security_group.session_server.id
     })
   ]
 

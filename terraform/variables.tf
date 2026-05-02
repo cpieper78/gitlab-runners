@@ -103,9 +103,24 @@ variable "session_server_timeout" {
 }
 
 variable "session_server_source_cidrs" {
-  description = "CIDRs permitted to reach the session_server NLB. Default 0.0.0.0/0; tighten to GitLab egress ranges in production."
+  description = <<-EOT
+    CIDRs allowed to reach the session_server NLB on 443/tcp. These should be
+    GitLab.com's egress IP ranges (the source IPs the GitLab web tier uses to
+    reach customer-hosted runner session servers).
+
+    There is intentionally no default — the canonical list lives in GitLab's
+    docs and changes over time. Pull the current set from
+    https://docs.gitlab.com/ee/user/gitlab_com/#ip-range and pass it here.
+
+    Setting ["0.0.0.0/0"] is allowed but defeats the security group; only do it
+    while bootstrapping.
+  EOT
   type        = list(string)
-  default     = ["0.0.0.0/0"]
+
+  validation {
+    condition     = length(var.session_server_source_cidrs) > 0
+    error_message = "Provide at least one CIDR — see https://docs.gitlab.com/ee/user/gitlab_com/#ip-range for GitLab's published egress ranges."
+  }
 }
 
 variable "aws_load_balancer_controller_chart_version" {

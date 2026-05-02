@@ -6,6 +6,10 @@
 #   TF_VAR_session_server_hostname
 #   TF_VAR_route53_zone_id
 #   TF_VAR_gitlab_project_path
+# Optional overrides for the list-typed required vars below (the defaults set
+# in `variables:` are TEST-NET placeholders, so plan runs out of the box):
+#   TF_VAR_session_server_source_cidrs            (JSON list, e.g. '["1.2.3.0/24"]')
+#   TF_VAR_cluster_endpoint_public_access_cidrs   (JSON list, e.g. '["1.2.3.0/24"]')
 # Secret (masked):
 #   TF_VAR_gitlab_runner_token
 
@@ -23,6 +27,11 @@ default:
 
 variables:
   TF_IN_AUTOMATION: "true"
+  # Safe placeholder JSON for required list-typed vars so plan is runnable
+  # before project-level CI/CD variables are configured. Override in the
+  # GitLab UI under Settings > CI/CD > Variables when ready.
+  TF_VAR_session_server_source_cidrs: '["203.0.113.0/24"]'
+  TF_VAR_cluster_endpoint_public_access_cidrs: '["203.0.113.0/24"]'
 
 .aws_oidc: &aws_oidc
   id_tokens:

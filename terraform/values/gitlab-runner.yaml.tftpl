@@ -43,10 +43,10 @@ sessionServer:
   internalPort: 8093
   externalPort: 443
   publicIP: ${session_server_hostname}
-  loadBalancerSourceRanges:
-%{ for cidr in session_server_source_cidrs ~}
-    - ${cidr}
-%{ endfor ~}
+  # Ingress is locked down by aws_security_group.session_server (managed by
+  # Terraform from var.session_server_source_cidrs). The AWS Load Balancer
+  # Controller attaches that SG via the `aws-load-balancer-security-groups`
+  # annotation, so loadBalancerSourceRanges is intentionally omitted.
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-type: external
     service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
@@ -54,3 +54,5 @@ sessionServer:
     service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp
     service.beta.kubernetes.io/aws-load-balancer-ssl-cert: ${session_server_certificate_arn}
     service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+    service.beta.kubernetes.io/aws-load-balancer-security-groups: ${session_server_security_group}
+    service.beta.kubernetes.io/aws-load-balancer-manage-backend-security-group-rules: "true"
