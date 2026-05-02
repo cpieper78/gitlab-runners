@@ -1,10 +1,10 @@
 resource "aws_security_group" "session_server" {
-  name_prefix = "${local.name_prefix}-session-server-"
+  name_prefix = "${local.name}-session-server-"
   description = "Ingress allow-list for the GitLab Runner session_server NLB. Attached to the NLB via the AWS Load Balancer Controller `aws-load-balancer-security-groups` annotation."
   vpc_id      = module.vpc.vpc_id
 
   tags = merge(local.tags, {
-    Name = "${local.name_prefix}-session-server"
+    Name = "${local.name}-session-server"
   })
 
   lifecycle {
