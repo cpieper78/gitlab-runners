@@ -18,10 +18,11 @@ runner_concurrency = 10
 cluster_endpoint_public_access_cidrs = ["203.0.113.0/24"]
 
 # Required: GitLab.com egress CIDRs that need to reach the session_server NLB
-# for the interactive web terminal. Pull the canonical list from
-# https://docs.gitlab.com/ee/user/gitlab_com/#ip-range and copy the entries
-# here. Update on a cadence (or whenever GitLab announces a change).
+# for the interactive web terminal. The values below are placeholders — pull
+# the canonical list from
+# https://docs.gitlab.com/ee/user/gitlab_com/#ip-range
+# and replace these entries before applying. Update on a cadence (or whenever
+# GitLab announces a change).
 session_server_source_cidrs = [
-  # "x.x.x.x/yy",
-  # "x.x.x.x/yy",
+  "203.0.113.0/24",
 ]
