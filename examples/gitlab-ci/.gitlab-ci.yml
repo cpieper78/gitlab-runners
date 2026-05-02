@@ -1,0 +1,71 @@
+# Demo pipeline that exercises the EKS-hosted GitLab runners end-to-end.
+#
+# Copy this file to the root of any GitLab project that has the runner
+# registered with the tag `eks-runners`. CI/CD variables expected:
+#
+#   AWS_SECRETS_ROLE_ARN  (output `gitlab_ci_secrets_reader_role_arn`)
+#   AWS_REGION            (e.g. us-east-1)
+#
+# Set both as Project → Settings → CI/CD → Variables. The role ARN can be
+# unmasked; the region likewise.
+
+stages:
+  - build
+  - test
+  - terminal
+  - secrets
+
+default:
+  image: alpine:3.20
+  tags: [eks-runners]
+
+variables:
+  CACHE_KEY: $CI_COMMIT_REF_SLUG
+
+build:warm-cache:
+  stage: build
+  cache:
+    key: $CACHE_KEY
+    paths:
+      - build/
+  script:
+    - mkdir -p build
+    - dd if=/dev/urandom of=build/blob bs=1M count=10 2>/dev/null
+    - ls -lh build/
+    - echo "Cache should be uploaded to S3 after this job."
+
+test:matrix:
+  stage: test
+  parallel:
+    matrix:
+      - SHARD: ["a", "b", "c"]
+  script:
+    - echo "Running shard $SHARD on $(hostname)"
+    - sleep 30
+    - echo "Shard $SHARD done"
+
+terminal:debug:
+  stage: terminal
+  when: manual
+  script:
+    - echo "Pausing the build pod so you can attach an interactive web terminal from the GitLab UI."
+    - echo "Open the job in the UI and click 'Debug'."
+    - sleep 1800
+
+secret:fetch:
+  stage: secrets
+  id_tokens:
+    AWS_TOKEN:
+      aud: https://gitlab.com
+  secrets:
+    DEMO_SECRET:
+      aws_secrets_manager:
+        secret_id: gitlab-runners/demo
+        region: $AWS_REGION
+        role_arn: $AWS_SECRETS_ROLE_ARN
+        role_session_name: gitlab-$CI_JOB_ID
+      file: false
+  script:
+    - test -n "$DEMO_SECRET" || (echo "secret was empty"; exit 1)
+    - echo "fetched length=${#DEMO_SECRET}"
+    # Never echo the value itself.

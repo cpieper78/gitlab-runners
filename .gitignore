@@ -1,0 +1,19 @@
+# Terraform
+.terraform/
+.terraform.tfstate.lock.info
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+
+# Variable files (commit only the .example variant)
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp

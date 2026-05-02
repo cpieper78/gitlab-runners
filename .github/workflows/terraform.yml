@@ -1,0 +1,75 @@
+name: terraform
+
+on:
+  pull_request:
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform.yml"
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+env:
+  TF_IN_AUTOMATION: "true"
+  AWS_REGION: us-east-1
+  TF_WORKDIR: terraform
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.TF_WORKDIR }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.5
+
+      - name: terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: terraform init
+        run: terraform init -input=false
+
+      - name: terraform validate
+        run: terraform validate -no-color
+
+      - name: terraform plan
+        id: plan
+        env:
+          TF_VAR_gitlab_runner_token: ${{ secrets.GITLAB_RUNNER_TOKEN }}
+          TF_VAR_session_server_hostname: ${{ vars.SESSION_SERVER_HOSTNAME }}
+          TF_VAR_route53_zone_id: ${{ vars.ROUTE53_ZONE_ID }}
+          TF_VAR_gitlab_project_path: ${{ vars.GITLAB_PROJECT_PATH }}
+        run: |
+          set -o pipefail
+          terraform plan -no-color -input=false -out=tfplan | tee plan.txt
+
+      - name: comment plan on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const planPath = path.join('${{ env.TF_WORKDIR }}', 'plan.txt');
+            const max = 60_000; // GitHub comment limit guard
+            let body = fs.readFileSync(planPath, 'utf8');
+            if (body.length > max) {
+              body = body.slice(0, max) + '\n\n... (truncated)';
+            }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '```\n' + body + '\n```',
+            });

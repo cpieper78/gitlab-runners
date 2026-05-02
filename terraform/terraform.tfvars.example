@@ -1,0 +1,18 @@
+region              = "us-east-1"
+cluster_name        = "gitlab-runners"
+
+# Required (no defaults).
+session_server_hostname = "runners.example.com"
+route53_zone_id         = "Z0123456789ABCDEFGHIJ"
+gitlab_project_path     = "mygroup/myrepo"
+
+# Sensitive — prefer env: export TF_VAR_gitlab_runner_token=glrt-...
+# gitlab_runner_token = "glrt-xxxxxxxxxxxxxxxxxxxx"
+
+# Optional toggles.
+create_demo_secret = true
+runner_concurrency = 10
+
+# Tighten in production:
+# cluster_endpoint_public_access_cidrs = ["203.0.113.0/24"]
+# session_server_source_cidrs          = ["203.0.113.0/24"]
